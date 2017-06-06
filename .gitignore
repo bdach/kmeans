@@ -1,0 +1,8 @@
+# Compiler output
+
+*.o
+kmeans
+
+# Vim temp files
+*.*~
+*.swp
