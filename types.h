@@ -7,6 +7,9 @@ typedef struct points {
 	std::vector<float> x;
 	std::vector<float> y;
 	std::vector<float> z;
+
+	points() {}
+	explicit points(unsigned int size) : x(size), y(size), z(size) {}
 } points_t;
 
 #endif

@@ -12,6 +12,7 @@
 
 points_t parse_input(const char *filename);
 void usage(char *name);
+void save_output(const char *filename, const points_t& means);
 
 int main(int argc, char **argv) {
 	char c;
@@ -50,7 +51,8 @@ int main(int argc, char **argv) {
 	}
 	try {
 		points_t points = parse_input(input);
-		cpu_kmeans(points, k, threshold);
+		points_t means = cpu_kmeans(points, k, threshold);
+		save_output(output, means);
 	} catch (std::exception& ex) {
 		std::cerr << ex.what() << std::endl;
 		usage(argv[0]);
@@ -82,10 +84,10 @@ points_t parse_input(const char *filename) {
 		token = strtok(buf, ",");
 		if (token == nullptr) continue;
 		x = atof(token);
-		token = strtok(buf, ",");
+		token = strtok(nullptr, ",");
 		if (token == nullptr) continue;
 		y = atof(token);
-		token = strtok(buf, ",");
+		token = strtok(nullptr, ",");
 		if (token == nullptr) continue;
 		z = atof(token);
 		points.x.push_back(x);
@@ -93,4 +95,15 @@ points_t parse_input(const char *filename) {
 		points.z.push_back(z);
 	}
 	return points;
+}
+
+void save_output(const char *filename, const points_t& means) {
+	std::ofstream output(filename);
+	if (!output.good())
+		throw std::invalid_argument("Could not write to file");
+	for (unsigned int i = 0; i < means.x.size(); ++i) {
+		output << means.x[i] << ",";
+		output << means.y[i] << ",";
+		output << means.z[i] << std::endl;
+	}
 }
