@@ -15,7 +15,7 @@ points_t cpu_kmeans(const points_t& input, unsigned int k, float tolerance) {
 	unsigned int delta = n;
 	std::vector<unsigned int> membership(n);
 
-	while (((double)delta / n) > tolerance) {
+	while (((float)delta / n) > tolerance) {
 		points_t new_means(k);
 		std::vector<unsigned int> means_count(k);
 		delta = 0;
