@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #include "cpu_kmeans.h"
+#include "gpu_kmeans.h"
 #include "types.h"
 
 #define BUF_SIZE 256
@@ -33,7 +34,7 @@ int main(int argc, char **argv) {
 				k = atoi(optarg);
 				break;
 			case 't':
-				k = atof(optarg);
+				threshold = atof(optarg);
 				break;
 			case 'c':
 				cpu = true;
@@ -51,7 +52,12 @@ int main(int argc, char **argv) {
 	}
 	try {
 		points_t points = parse_input(input);
-		points_t means = cpu_kmeans(points, k, threshold);
+		points_t means;
+		if (cpu) {
+			means = cpu_kmeans(points, k, threshold);
+		} else {
+			means = gpu_kmeans(points, k, threshold);
+		}
 		save_output(output, means);
 	} catch (std::exception& ex) {
 		std::cerr << ex.what() << std::endl;

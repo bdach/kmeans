@@ -1,13 +1,10 @@
 #include <limits>
-#include <set>
 #include <stdexcept>
 #include <stdlib.h>
-#include <time.h>
 
+#include "common.h"
+#include "cpu_kmeans.h"
 #include "types.h"
-
-points_t initialize_means(const points_t& input, unsigned int k);
-float calculate_distance(const points_t& input, unsigned int input_idx, const points_t& means, unsigned int means_idx);
 
 points_t cpu_kmeans(const points_t& input, unsigned int k, float tolerance) {
 	unsigned int n = input.x.size();
@@ -47,23 +44,6 @@ points_t cpu_kmeans(const points_t& input, unsigned int k, float tolerance) {
 			new_means.z[j] /= means_count[j];
 		}
 		means = new_means;
-	}
-	return means;
-}
-
-points_t initialize_means(const points_t& input, unsigned int k) {
-	srand(time(NULL));
-	points_t means;
-	std::set<int> indices;
-	int count = input.x.size();
-	while (indices.size() < k) {
-		int idx = rand() % count;
-		indices.insert(idx);
-	}
-	for (auto index : indices) {
-		means.x.push_back(input.x[index]);
-		means.y.push_back(input.y[index]);
-		means.z.push_back(input.z[index]);
 	}
 	return means;
 }

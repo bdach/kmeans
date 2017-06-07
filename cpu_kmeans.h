@@ -3,5 +3,6 @@
 #include "types.h"
 
 points_t cpu_kmeans(const points_t& input, unsigned int k, float tolerance);
+float calculate_distance(const points_t& input, unsigned int input_idx, const points_t& means, unsigned int means_idx);
 
 #endif

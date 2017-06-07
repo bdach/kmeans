@@ -152,7 +152,7 @@ NVCC          := $(CUDA_PATH)/bin/nvcc -ccbin $(HOST_COMPILER)
 
 # internal flags
 NVCCFLAGS   := -m${TARGET_SIZE}
-CCFLAGS     := -Wall --pedantic
+CCFLAGS     := -Wall
 LDFLAGS     := 
 
 # build flags
@@ -234,13 +234,22 @@ all: build
 
 build: kmeans
 
-cpu_kmeans.o: cpu_kmeans.cpp
+common.o: common.cpp common.h
+	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
+
+cpu_kmeans.o: cpu_kmeans.cpp cpu_kmeans.h common.o
+	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
+
+gpu_kmeans_kernel.o: gpu_kmeans_kernel.cu
+	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
+
+gpu_kmeans.o: gpu_kmeans.cpp gpu_kmeans.h gpu_kmeans_kernel.o common.o
 	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
 
 main.o: main.cpp
 	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
 
-kmeans: main.o cpu_kmeans.o
+kmeans: main.o cpu_kmeans.o gpu_kmeans.o gpu_kmeans_kernel.o common.o
 	$(EXEC) $(NVCC) $(ALL_LDFLAGS) $(GENCODE_FLAGS) -o $@ $+ $(LIBRARIES)
 
 run: build
