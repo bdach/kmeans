@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
 				break;
 		}
 	}
-	if (nullptr == input || nullptr == output || k <= 1 || threshold < 0) {
+	if (nullptr == input || nullptr == output || k <= 1 || threshold < 0 || threshold > 1) {
 		usage(argv[0]);
 	}
 	try {

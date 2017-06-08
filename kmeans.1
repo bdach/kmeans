@@ -1,0 +1,75 @@
+.TH KMEANS
+.SH NAME
+kmeans \- cluster 3D data using an approximated iterative algorithm
+.SH SYNOPSIS
+.B kmeans
+\fB\-i\fR \fIinput_file\fR
+\fB\-o\fR \fIoutput_file\fR
+\fB\-k\fR \fInum_clusters\fR
+[\fB\-t\fR \fIthreshold\fR]
+[\fB\-gc\fR]
+[\fB\-m\fR \fImembership_output_file\fR]
+[\fB\-s\fR \fIseed\fR]
+.SH DESCRIPTION
+.B kmeans
+reads the \fIinput_file\fR, which should be a comma-separated file, containing
+coordinates of points in 3D space in each line. (The file can contain comment
+lines, which start with the hash character \fB#\fR.) Using an approximated
+iterative algorithm and the supplied parameter \fInum_clusters\fR, the program
+divides the input points into \fBk\fR clusters.
+.PP
+The result of the program is a file located in the path specified in the
+\fIoutput_file\fR argument. It is a comma-separated file containing the
+computed coordinates of the cluster centers. The program will also print the
+execution time of the clustering algorithm to \fBstdout\fR.
+.PP
+If the \fB-m\fR option was specified, the program also writes to a file with
+the name supplied in the \fImembership_output_file\fR argument. The produced
+file has the exact same number of lines, as \fIinput_file\fR; each line contains
+a single number indicating which cluster the point was assigned to. The indexes
+of the cluster in the file correspond to the order of cluster center
+coordinates in the \fIoutput_file\fR.
+.SH OPTIONS
+.TP
+.BR \-i\ \fIinput_file\fR
+Specifies the path of the input CSV file, containing coordinates of the points
+to cluster.
+.TP
+.BR \-o\ \fIoutput_file\fR
+Specifies the path of the output CSV file, which will contain the coordinates
+of the calculated cluster centers.
+.TP
+.BR \-k\ \fInum_clusters\fR
+Used to specify the number of clusters the points should be split into. The
+value of this argument should be greater than one and less than the total
+number of 3D points in \fIinput_file\fR.
+.TP
+.BR\-t\ \fIthreshold\fR
+Specifies the threshold which is used in the iteration termination condition.
+This number specifies how many of the points can change cluster membership
+in the last iteration. The value of this argument should be between 0 and 1,
+where lower is better, but slower. The default value of this argument is 0.01.
+.TP
+.BR \-g
+Uses the GPU parallel algorithm for clustering, utilizing the CUDA toolkit.
+.TP
+.BR \-c
+Uses the CPU serial algorithm for clustering.
+.TP
+.BR \-m\ \fImembership_output_file\fR
+Specifies the path of the file to which the membership of every point in the
+\fIinput_file\fR will be written.
+.TP
+.BR \-s\ \fIseed\fR
+Used to specify the seed to use in the random number generator. Randomness is
+used in the clustering algorithm to initialize the means before the first
+iteration. When this parameter is specified, the program output in both the CPU
+and GPU versions is deterministic.
+The choice of the proper seed value can influence the output quality (for some
+values the convergence is worse, for some better). If no seed is specified,
+the current system time is used to initialize the generator.
+.SH ACKNOWLEDGEMENTS
+The makefile for the project was adapted from the NVIDIA CUDA samples.
+.PP
+The GPU computation uses Thrust for fast summation of the subdelta counts from
+each block.
