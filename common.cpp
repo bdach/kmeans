@@ -1,11 +1,10 @@
 #include <set>
 #include <stdlib.h>
-#include <time.h>
 
 #include "common.h"
 
-points_t initialize_means(const points_t& input, unsigned int k) {
-	srand(time(NULL));
+points_t initialize_means(const points_t& input, unsigned int k, unsigned int seed) {
+	srand(seed);
 	points_t means;
 	std::set<int> indices;
 	int count = input.x.size();

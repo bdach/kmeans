@@ -3,6 +3,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 #include <vector>
 
@@ -24,8 +25,9 @@ int main(int argc, char **argv) {
 	unsigned int k;
 	bool cpu;
 	float threshold = 0.01;
+	unsigned int seed = time(NULL);
 
-	while ((c = getopt(argc, argv, "i:o:k:t:gcm:")) != -1) {
+	while ((c = getopt(argc, argv, "i:o:k:t:gcm:s:")) != -1) {
 		switch (c) {
 			case 'i':
 				input = optarg;
@@ -48,6 +50,9 @@ int main(int argc, char **argv) {
 			case 'm':
 				membership = optarg;
 				break;
+			case 's':
+				seed = (unsigned int)atoi(optarg);
+				break;
 			default:
 				usage(argv[0]);
 				break;
@@ -60,9 +65,9 @@ int main(int argc, char **argv) {
 		points_t points = parse_input(input);
 		result_t result;
 		if (cpu) {
-			result = cpu_kmeans(points, k, threshold);
+			result = cpu_kmeans(points, k, threshold, seed);
 		} else {
-			result = gpu_kmeans(points, k, threshold);
+			result = gpu_kmeans(points, k, threshold, seed);
 		}
 		save_output(output, result.means);
 		if (membership != nullptr) {
@@ -84,6 +89,7 @@ void usage(char *name) {
 	std::cerr << " -g: use GPU for computation" << std::endl;
 	std::cerr << " -c: use CPU for computation (default)" << std::endl;
 	std::cerr << " -m: output membership data to another file (every line contains the cluster number for each point)" << std::endl;
+	std::cerr << " -s: set seed for initial means choice" << std::endl;
 	exit(EXIT_FAILURE);
 }
 

@@ -11,6 +11,6 @@ extern "C" void run_kernel(unsigned int n,
 		points_t& means,
 		std::vector<unsigned int>& membership);
 
-result_t gpu_kmeans(const points_t& input, unsigned int k, float tolerance);
+result_t gpu_kmeans(const points_t& input, unsigned int k, float tolerance, unsigned int seed);
 
 #endif

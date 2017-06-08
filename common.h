@@ -2,6 +2,6 @@
 #define _COMMON_H
 #include "types.h"
 
-points_t initialize_means(const points_t& input, unsigned int k);
+points_t initialize_means(const points_t& input, unsigned int k, unsigned int seed);
 
 #endif

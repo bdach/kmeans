@@ -3,11 +3,11 @@
 
 #include <stdexcept>
 
-result_t gpu_kmeans(const points_t& input, unsigned int k, float tolerance) {
+result_t gpu_kmeans(const points_t& input, unsigned int k, float tolerance, unsigned int seed) {
 	unsigned int n = input.x.size();
 	if (k > n)
 		throw std::invalid_argument("Number of clusters requested larger than number of points loaded");
-	points_t means = initialize_means(input, k);
+	points_t means = initialize_means(input, k, seed);
 	std::vector<unsigned int> membership(n);
 
 	// call kernel

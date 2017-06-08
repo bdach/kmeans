@@ -31,12 +31,12 @@ __global__ void calculate_distances(unsigned int n,
 		float **points,
 		float **means,
 		unsigned int *membership,
-		unsigned char *subdelta)
+		unsigned int *subdelta)
 {
-	extern __shared__ unsigned char membership_changed[];
-
+	extern __shared__ unsigned int membership_changed[];
 	unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	unsigned int tid = threadIdx.x;
+	membership_changed[tid] = 0;
 	if (idx >= n) return;
 	float min_dist = INFINITY;
 	unsigned int cluster = 0;
@@ -51,7 +51,7 @@ __global__ void calculate_distances(unsigned int n,
 		}
 		__syncthreads(); // end of uncertain branch
 	}
-	membership_changed[tid] = membership[idx] == cluster;
+	membership_changed[tid] = membership[idx] != cluster;
 	membership[idx] = cluster;
 	__syncthreads();
 	for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1) {
@@ -59,6 +59,7 @@ __global__ void calculate_distances(unsigned int n,
 			membership_changed[tid] += membership_changed[tid + s];
 		__syncthreads();
 	}
+	__syncthreads();
 	if (tid == 0) {
 		subdelta[blockIdx.x] = membership_changed[0];
 	}
@@ -94,21 +95,23 @@ extern "C" void run_kernel(unsigned int n,
 	checkCudaErrors(cudaMemcpy(d_means_d, means_d, sizeof(means_d), cudaMemcpyHostToDevice));
 
 	unsigned int block_count = ceil((float)n / NUM_THREADS);
-	unsigned int subdelta_size = block_count * sizeof(unsigned char);
-	unsigned int shared_subdelta_size = NUM_THREADS * sizeof(unsigned char);
-	unsigned char *d_subdelta; // WARNING: This works because NUM_THREADS is 256
+	unsigned int subdelta_size = block_count * sizeof(unsigned int);
+	unsigned int shared_subdelta_size = NUM_THREADS * sizeof(unsigned int);
+	unsigned int *d_subdelta;
 	checkCudaErrors(cudaMalloc((void **)&d_subdelta, subdelta_size));
 
 	const unsigned int membership_size = n * sizeof(unsigned int);
 	unsigned int *d_new_membership;
 	checkCudaErrors(cudaMalloc((void **)&d_new_membership, membership_size));
+	checkCudaErrors(cudaMemset(d_new_membership, 0, membership_size));
 
 	unsigned int delta = n;
 	while (((float)delta / n) > tolerance) {
 		delta = 0;
+		checkCudaErrors(cudaMemset(d_subdelta, 0, subdelta_size));
 		calculate_distances<<< block_count, NUM_THREADS, shared_subdelta_size >>>(n, k, d_points_d, d_means_d, d_new_membership, d_subdelta);
 		getLastCudaError();
-		thrust::device_ptr<unsigned char> ptr(d_subdelta);
+		thrust::device_ptr<unsigned int> ptr(d_subdelta);
 		delta = thrust::reduce(ptr, ptr + block_count);
 		std::vector<unsigned int> counts(k);
 		for (unsigned int j = 0; j < k; ++j) {
