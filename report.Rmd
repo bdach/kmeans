@@ -1,0 +1,113 @@
+---
+title: "Algorytm $k$-średnich"
+subtitle: "Procesory graficzne w zastosowaniach obliczeniowych -- Projekt 2"
+author: "Bartłomiej Dach"
+date: "8 czerwca 2017"
+output: 
+  pdf_document:
+    number_sections: true
+header-includes:
+  - \usepackage[polish]{babel}
+---
+```{r init, echo = FALSE}
+options(scipen=999)
+```
+
+# Wstęp
+
+Algorytm $k$-średnich służy do podziału zbiory
+$D = \{ x_1, x_2, \dots, x_n \} \subset \mathbb{R}^d$
+na $k$ podzbiorów ($k \in \{2, \dots, n \}$), zwanych *klastrami*.
+Każdemu z tych klastrów przyporządkowany jest punkt $c_i$, zwany *centrum* klastra.
+Wyznaczony przez algorytm podział musi być taki, że dla każdego punktu $x_j \in D$
+należy on do $p$-tego klastra wtedy i tylko wtedy, gdy
+
+$$ \| x_j - c_p \| = \min_{q = 1, \dots, k} \| x_j - c_q \| $$
+
+Rozwiązanie tego problemu w ogólności jest NP-trudne, lecz istnieją algorytmy
+iteracyjne wyznaczające rozwiązania przybliżone.
+Jednym z nich jest zaimplementowane rozwiązanie iteracyjne, którego schemat
+działania opisany jest poniżej:
+
+1. Wylosuj $k$ punktów z $D$. Są one początkowymi centrami klastrów.
+2. Przypisz wszystkie punkty do pierwszego klastra.
+3. Dopóki $\delta > t \cdot n$:
+    a) $\delta \leftarrow 0$
+    b) Dla każdego punktu wyznacz najbliższe centrum.
+    c) Jeśli najbliższe centrum jest bliżej niż centrum klastra, do którego
+       punkt jest przypisany, zmień przypisanie punktu i zwiększ wartość
+       $\delta$ o 1.
+    d) Dla każdego klastra, oblicz średnie współrzędnych punktów w danym
+       klastrze i utwórz z nich punkt.
+       Utworzony punkt staje się nowym centrum klastra.
+       
+Parametr $t$ zwany jest *tolerancją* i określa, jaki odsetek punktów może być
+przypisany do złego klastra po ostatniej iteracji pętli. Jego wartość musi
+znajdować się w przedziale $[0, 1]$, przy czym im mniejsza jej wartość, tym
+lepszy podział (ale potencjalnie większa ilość iteracji).
+
+Algorytm $k$-średnich używany jest m.in. w klasyfikacji i analizie danych
+wielowymiarowych oraz do redukcji kolorów w grafice komputerowej.
+
+Zgodnie z treścią zadania, zaimplementowany został prostszy wariant, ograniczający
+się do przestrzeni trójwymiarowej.
+
+# Implementacja algorytmu
+
+W przypadku wersji szeregowej wykonującej się na CPU, implementacja sprowadzała
+się do przełożenia pseudokodu z poprzedniej sekcji na język C++. Złożoność
+algorytmu w tej formie jest rzędu $O(k \cdot n)$.
+
+W wersji równoległej wykorzystano schemat paralelizacji danych. Punkty ze
+zbioru $D$ zostały podzielone między wątki zorganizowane w bloki po 256 wątków 
+każdy; każdy wątek oblicza odległości jednego punktu od wszystkich centrów
+i wyznacza najbliższe z nich. Zliczanie zmian odbywa się za pośrednictwem
+pamięci współdzielonej (ang. *shared memory*). Każdy wątek wpisuje do własnej
+komórki pamięci współdzielonej 1, jeśli zmieniły przynależność lub 0 w przeciwnym 
+przypadku; następnie następuje redukcja w obrębie bloku, a potem redukcja sum
+częściowych ze wszystkich bloków. Do tej ostatniej wykorzystana została
+biblioteka `thrust`.
+
+```{r echo=FALSE, fig.cap="Przykładowy wynik programu dla 12000 wygenerowanych punktów testowych"}
+library(scatterplot3d)
+data <- read.csv('data.csv', header = FALSE)
+clusters <- read.csv('clusters.csv', header = FALSE)
+membership <- read.csv('membership.csv', header = FALSE) + 1
+color_map <- c('green', 'red', 'blue')
+colors <- color_map[membership$V1]
+scatterplot3d(data, color=colors, xlab = 'x', ylab = 'y', zlab = 'z')
+```
+
+# Testy wydajnościowe
+
+W celu przetestowania wydajności wygenerowano sztucznie zbiory danych
+składające się z 3 klastrów, z czego każdy składał się z punktów wygenerowanych
+losowo z normalnym rozkładów prawdopodobieństwa wokół wybranego centrum.
+Dla tych danych wywołane zostały oba warianty algorytmu i zmierzone zostały
+czasy ich wykonania. Zależność czasu od rozmiaru wejścia przedstawiają poniższe:
+wykres i tabela.
+
+```{r echo=FALSE}
+data <- read.csv('perf.csv')
+knitr::kable(
+  data,
+  col.names = c("Rozmiar problemu (n)", "Czas wykonania dla CPU (ms)", "Czas wykonania dla GPU (ms)"),
+  caption = ""
+)
+```
+
+\newpage
+
+```{r echo=FALSE, fig.cap="Zależność czasu wykonania algorytmu od rozmiaru wejścia"}
+plot(data$n, data$cpu, log='x', type='l', 
+     xlab='rozmiar wejścia - log(n)', 
+     ylab='czas (ms)', 
+     main='Zależność czasu wykonania algorytmu od rozmiaru wejścia'
+)
+lines(data$n, data$gpu, col='red')
+legend(1e3, 6400, lwd=1, legend = c('CPU', 'GPU'), col=c('black', 'red'))
+```
+
+Widoczne jest, że dla mniejszych $n$ narzut na przygotowanie uruchomienia
+jąder CUDA zajmuje dłuższą ilość czasu, lecz dla bardzo dużych zysk czasowy
+sięga kilku razy.
