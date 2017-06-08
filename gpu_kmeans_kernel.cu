@@ -23,7 +23,8 @@ extern "C" void run_kernel(unsigned int n,
 		unsigned int k,
 		float tolerance,
 		const points_t& points,
-		points_t& means);
+		points_t& means,
+		std::vector<unsigned int>& membership);
 
 __global__ void calculate_distances(unsigned int n,
 		unsigned int k,
@@ -67,7 +68,8 @@ extern "C" void run_kernel(unsigned int n,
 		unsigned int k,
 		float tolerance,
 		const points_t& in,
-		points_t& out)
+		points_t& out,
+		std::vector<unsigned int>& membership)
 {
 	const unsigned int points_size = n * sizeof(float);
 	const float *points[3] = {&in.x[0], &in.y[0], &in.z[0]};
@@ -98,8 +100,7 @@ extern "C" void run_kernel(unsigned int n,
 	checkCudaErrors(cudaMalloc((void **)&d_subdelta, subdelta_size));
 
 	const unsigned int membership_size = n * sizeof(unsigned int);
-	unsigned int *new_membership, *d_new_membership;
-	new_membership = (unsigned int *)malloc(membership_size);
+	unsigned int *d_new_membership;
 	checkCudaErrors(cudaMalloc((void **)&d_new_membership, membership_size));
 
 	unsigned int delta = n;
@@ -115,9 +116,9 @@ extern "C" void run_kernel(unsigned int n,
 			means[1][j] = 0;
 			means[2][j] = 0;
 		}
-		checkCudaErrors(cudaMemcpy(new_membership, d_new_membership, membership_size, cudaMemcpyDeviceToHost));
+		checkCudaErrors(cudaMemcpy(&membership[0], d_new_membership, membership_size, cudaMemcpyDeviceToHost));
 		for (unsigned int i = 0; i < n; ++i) {
-			unsigned int cluster = new_membership[i];
+			unsigned int cluster = membership[i];
 			means[0][cluster] += points[0][i];
 			means[1][cluster] += points[1][i];
 			means[2][cluster] += points[2][i];
@@ -141,5 +142,4 @@ extern "C" void run_kernel(unsigned int n,
 	checkCudaErrors(cudaFree(d_means_d));
 	checkCudaErrors(cudaFree(d_new_membership));
 	checkCudaErrors(cudaFree(d_subdelta));
-	free(new_membership);
 }

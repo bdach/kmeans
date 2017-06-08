@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <vector>
 
 #include "cpu_kmeans.h"
 #include "gpu_kmeans.h"
@@ -14,15 +15,17 @@
 points_t parse_input(const char *filename);
 void usage(char *name);
 void save_output(const char *filename, const points_t& means);
+void save_membership(const char *filename, const std::vector<unsigned int>& membership);
 
 int main(int argc, char **argv) {
 	char c;
 	const char *input, *output;
+	char *membership = nullptr;
 	unsigned int k;
 	bool cpu;
 	float threshold = 0.01;
 
-	while ((c = getopt(argc, argv, "i:o:k:t:gc")) != -1) {
+	while ((c = getopt(argc, argv, "i:o:k:t:gcm:")) != -1) {
 		switch (c) {
 			case 'i':
 				input = optarg;
@@ -42,6 +45,9 @@ int main(int argc, char **argv) {
 			case 'g':
 				cpu = false;
 				break;
+			case 'm':
+				membership = optarg;
+				break;
 			default:
 				usage(argv[0]);
 				break;
@@ -52,13 +58,16 @@ int main(int argc, char **argv) {
 	}
 	try {
 		points_t points = parse_input(input);
-		points_t means;
+		result_t result;
 		if (cpu) {
-			means = cpu_kmeans(points, k, threshold);
+			result = cpu_kmeans(points, k, threshold);
 		} else {
-			means = gpu_kmeans(points, k, threshold);
+			result = gpu_kmeans(points, k, threshold);
 		}
-		save_output(output, means);
+		save_output(output, result.means);
+		if (membership != nullptr) {
+			save_membership(membership, result.membership);
+		}
 	} catch (std::exception& ex) {
 		std::cerr << ex.what() << std::endl;
 		usage(argv[0]);
@@ -74,6 +83,7 @@ void usage(char *name) {
 	std::cerr << " -t: threshold for means calculation stop condition; must be greater than 1e-8" << std::endl;
 	std::cerr << " -g: use GPU for computation" << std::endl;
 	std::cerr << " -c: use CPU for computation (default)" << std::endl;
+	std::cerr << " -m: output membership data to another file (every line contains the cluster number for each point)" << std::endl;
 	exit(EXIT_FAILURE);
 }
 
@@ -106,10 +116,19 @@ points_t parse_input(const char *filename) {
 void save_output(const char *filename, const points_t& means) {
 	std::ofstream output(filename);
 	if (!output.good())
-		throw std::invalid_argument("Could not write to file");
+		throw std::invalid_argument("Could not write means to file");
 	for (unsigned int i = 0; i < means.x.size(); ++i) {
 		output << means.x[i] << ",";
 		output << means.y[i] << ",";
 		output << means.z[i] << std::endl;
+	}
+}
+
+void save_membership(const char *filename, const std::vector<unsigned int>& membership) {
+	std::ofstream output(filename);
+	if (!output.good())
+		throw std::invalid_argument("Could not write membership data to file");
+	for (auto m : membership) {
+		output << m << std::endl;
 	}
 }

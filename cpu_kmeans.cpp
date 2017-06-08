@@ -6,7 +6,7 @@
 #include "cpu_kmeans.h"
 #include "types.h"
 
-points_t cpu_kmeans(const points_t& input, unsigned int k, float tolerance) {
+result_t cpu_kmeans(const points_t& input, unsigned int k, float tolerance) {
 	unsigned int n = input.x.size();
 	if (k > n)
 		throw std::invalid_argument("Number of clusters requested larger than number of points loaded");
@@ -45,7 +45,8 @@ points_t cpu_kmeans(const points_t& input, unsigned int k, float tolerance) {
 		}
 		means = new_means;
 	}
-	return means;
+	result_t result = {means, membership};
+	return result;
 }
 
 float calculate_distance(const points_t& input, unsigned int input_idx, const points_t& means, unsigned int means_idx) {

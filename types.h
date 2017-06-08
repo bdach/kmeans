@@ -12,4 +12,9 @@ typedef struct points {
 	explicit points(unsigned int size) : x(size), y(size), z(size) {}
 } points_t;
 
+typedef struct result {
+	points_t means;
+	std::vector<unsigned int> membership;
+} result_t;
+
 #endif
