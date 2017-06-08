@@ -1,3 +1,4 @@
+#include <chrono>
 #include <exception>
 #include <fstream>
 #include <iostream>
@@ -12,6 +13,8 @@
 #include "types.h"
 
 #define BUF_SIZE 256
+
+typedef std::chrono::high_resolution_clock Clock;
 
 points_t parse_input(const char *filename);
 void usage(char *name);
@@ -58,17 +61,22 @@ int main(int argc, char **argv) {
 				break;
 		}
 	}
-	if (nullptr == input || nullptr == output || k <= 1 || threshold <= 1e-8) {
+	if (nullptr == input || nullptr == output || k <= 1 || threshold < 0) {
 		usage(argv[0]);
 	}
 	try {
 		points_t points = parse_input(input);
 		result_t result;
+		auto t1 = Clock::now();
 		if (cpu) {
 			result = cpu_kmeans(points, k, threshold, seed);
 		} else {
 			result = gpu_kmeans(points, k, threshold, seed);
 		}
+		auto t2 = Clock::now();
+		std::cout << "Elapsed time: "
+			<< std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
+			<< " ms" << std::endl;
 		save_output(output, result.means);
 		if (membership != nullptr) {
 			save_membership(membership, result.membership);
@@ -85,7 +93,7 @@ void usage(char *name) {
 	std::cerr << " -i: name of a file containing 3D points in CSV format" << std::endl;
 	std::cerr << " -o: name of the file to write program results to" << std::endl;
 	std::cerr << " -k: number of clusters to divide points into, must be greater than 1" << std::endl;
-	std::cerr << " -t: threshold for means calculation stop condition; must be greater than 1e-8" << std::endl;
+	std::cerr << " -t: threshold for means calculation stop condition; must be greater than 0" << std::endl;
 	std::cerr << " -g: use GPU for computation" << std::endl;
 	std::cerr << " -c: use CPU for computation (default)" << std::endl;
 	std::cerr << " -m: output membership data to another file (every line contains the cluster number for each point)" << std::endl;
