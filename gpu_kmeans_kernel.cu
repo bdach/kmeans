@@ -6,6 +6,8 @@
 #include <thrust/reduce.h>
 #include <vector>
 
+#include "types.h"
+
 inline void on_error(cudaError_t errcode, const char *file, int line) {
 	if (errcode != cudaSuccess) {
 		fprintf(stderr, "CUDA error: %s (%s:%d)\n", cudaGetErrorString(errcode), file, line);
@@ -20,12 +22,8 @@ inline void on_error(cudaError_t errcode, const char *file, int line) {
 extern "C" void run_kernel(unsigned int n,
 		unsigned int k,
 		float tolerance,
-		const float *in_x,
-		const float *in_y,
-		const float *in_z,
-		float *out_x,
-		float *out_y,
-		float *out_z);
+		const points_t& points,
+		points_t& means);
 
 __global__ void calculate_distances(unsigned int n,
 		unsigned int k,
@@ -68,15 +66,11 @@ __global__ void calculate_distances(unsigned int n,
 extern "C" void run_kernel(unsigned int n,
 		unsigned int k,
 		float tolerance,
-		const float *in_x,
-		const float *in_y,
-		const float *in_z,
-		float *out_x,
-		float *out_y,
-		float *out_z)
+		const points_t& in,
+		points_t& out)
 {
 	const unsigned int points_size = n * sizeof(float);
-	const float *points[3] = {in_x, in_y, in_z};
+	const float *points[3] = {&in.x[0], &in.y[0], &in.z[0]};
 	float *points_d[3];
 	float **d_points_d;
 	for (int i = 0; i < 3; ++i) {
@@ -87,7 +81,7 @@ extern "C" void run_kernel(unsigned int n,
 	checkCudaErrors(cudaMemcpy(d_points_d, points_d, sizeof(points_d), cudaMemcpyHostToDevice));
 
 	const unsigned int means_size = k * sizeof(float);
-	float *means[3] = {out_x, out_y, out_z};
+	float *means[3] = {&out.x[0], &out.y[0], &out.z[0]};
 	float *means_d[3];
 	float **d_means_d;
 	for (unsigned int i = 0; i < 3; ++i) {

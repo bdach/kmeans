@@ -10,6 +10,6 @@ points_t gpu_kmeans(const points_t& input, unsigned int k, float tolerance) {
 	points_t means = initialize_means(input, k);
 
 	// call kernel
-	run_kernel(n, k, tolerance, &input.x[0], &input.y[0], &input.z[0], &means.x[0], &means.y[0], &means.z[0]);
+	run_kernel(n, k, tolerance, input, means);
 	return means;
 }
